@@ -80,7 +80,7 @@ function! s:make_menu() abort
 		let pass = "..".strpart(pass, strlen(pass) - 33)
 	endif
 
-	call add(s:menu, " [ Configure ]")
+	call add(s:menu, " [ Settings ]")
 	call add(s:menu, "   t - Tabstop toggle 4/8 [" . &tabstop . "]")
 	call add(s:menu, "   m - Modifiable [" . (&modifiable ? "+" : "-") ."]")
 	call add(s:menu, "   r - R/W control [" . (&readonly ? "RO" : "RW") . "]")
@@ -155,13 +155,20 @@ endfunction
 " Reset errorformat
 "*******************************************************
 function! s:reset_errorformat() abort
-	if &buftype != 'quickfix'
+	let bufs = filter(range(1, bufnr('$')), '
+			\ buflisted(v:val)
+			\ && getbufvar(v:val, "&buftype") == "quickfix"
+			\ ')
+
+	if len(bufs) && bufwinnr(bufs[0]) > 0
+		exe bufwinnr(bufs[0]) . 'wincmd w'
+		execute 'set errorformat=%f\|%l\ col\ \%c-\%k\|\ %m'
+		silent cgetbuffer
+		set modifiable
+	else
 		echohl WarningMsg | echomsg 'This buffer type is not quickfix' | echohl None
 		return
 	endif
-	execute 'set errorformat=%f\|%l\|\ %m'
-	silent cgetbuffer
-	set modifiable
 endfunction
 
 "*******************************************************
@@ -200,7 +207,7 @@ endfunction
 function! s:cmemo_selected_handler(key) abort
 	if strlen(a:key) == 0 | echo "\r" | call s:close_window() | endif
 
-	" [ Configure ]
+	" [ Settings ]
 	if	   a:key == "t"
 		" Tabstop
 		call s:close_window()
