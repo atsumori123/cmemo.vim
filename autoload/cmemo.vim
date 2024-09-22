@@ -199,6 +199,7 @@ endfunction
 "*******************************************************
 function! s:close_window() abort
 	silent! close
+	call win_gotoid(s:win_id)
 endfunction
 
 "*******************************************************
@@ -328,6 +329,7 @@ endfunction
 " Start tools
 "*******************************************************
 function! cmemo#start(range, start, end) abort
+	let s:win_id = win_getid()
 	let s:range = {'range':a:range, 'start':a:start, 'end':a:end}
 	call s:make_menu()
 	call s:open_window()
