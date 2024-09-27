@@ -84,15 +84,15 @@ function! s:make_menu() abort
 	call add(s:menu, "   t - Tabstop toggle 4/8 [" . &tabstop . "]")
 	call add(s:menu, "   m - Modifiable [" . (&modifiable ? "+" : "-") ."]")
 	call add(s:menu, "   r - R/W control [" . (&readonly ? "RO" : "RW") . "]")
-	call add(s:menu, "   d - Disply control code [" . (&list ? "On" : "Off") . "]")
+	call add(s:menu, "   c - Disply control code [" . (&list ? "On" : "Off") . "]")
 	call add(s:menu, "   i - Case sensitive [" . (&ignorecase ? "Off" : "On") . "]")
 	call add(s:menu, "")
 	call add(s:menu, " [ etc ]")
+	call add(s:menu, "   n - Terminal")
 	call add(s:menu, "   e - Reset errorformat")
 	call add(s:menu, "   f - Set file path to clipboard")
-	call add(s:menu, "   c - Change current directory")
+	call add(s:menu, "   d - Change current directory")
 	call add(s:menu, "       [".pass."]")
-	call add(s:menu, "")
 	call add(s:menu, "   q - Quit")
 
 	let s:menu[0] .= s:space(0) . " [ Tab and space conversion ]"
@@ -205,6 +205,13 @@ endfunction
 "*******************************************************
 " Selected handler of menu
 "*******************************************************
+function! s:yesno() abort
+	return input("Continue OK? [y/n] : ") == "y" ? 1 : 0
+endfunction
+
+"*******************************************************
+" Selected handler of menu
+"*******************************************************
 function! s:cmemo_selected_handler(key) abort
 	if strlen(a:key) == 0 | echo "\r" | call s:close_window() | endif
 
@@ -227,7 +234,7 @@ function! s:cmemo_selected_handler(key) abort
 		call s:close_window()
 		execute &readonly ? 'set noro' : 'set ro'
 
-	elseif a:key == "d"
+	elseif a:key == "c"
 		" Control-code (Display / Undisplay)
 		call s:close_window()
 		execute &list ? 'set nolist' : 'set list'
@@ -238,15 +245,20 @@ function! s:cmemo_selected_handler(key) abort
 		execute &ignorecase ? 'set noignorecase' : 'set ignorecase'
 
 	" [ etc ]
+	elseif a:key == "n"
+		call s:close_window()
+		execute 'lcd '.expand("%:h")
+		bot terminal
+
 	elseif a:key == "e"
 		" Reset errorformat
 		call s:close_window()
 		call s:reset_errorformat()
 
-	elseif a:key == "c"
+	elseif a:key == "d"
 		" Change current directory
 		call s:close_window()
-		execute 'cd '.(input('Set current directory: ', expand("%:h"), 'dir'))
+		execute 'lcd '.(input('Set current directory: ', expand("%:h"), 'dir'))
 
 	elseif a:key == "f"
 		" Directory path copy to clip board
@@ -257,24 +269,30 @@ function! s:cmemo_selected_handler(key) abort
 	" [ Tab and space conversion ]
 	elseif a:key == "1"
 		" Tab --> Space (Replace tabs with spaces
-		call s:close_window()
-		call s:space2tab()
+		if s:yesno()
+			call s:close_window()
+			call s:space2tab()
+		endif
 
 	elseif a:key == "2"
 		" Space --> Tab (Replace spaces with tabs
-		call s:close_window()
-		call s:tab2space()
+		if s:yesno()
+			call s:close_window()
+			call s:tab2space()
+		endif
 
 	elseif a:key == "3"
 		" Remove spaces and tabs at end of lines
-		call s:close_window()
-		call s:remove_space()
+		if s:yesno()
+			call s:close_window()
+			call s:remove_space()
+		endif
 
 	" [ Encording conversion ]
 	elseif a:key == "4"
 		" Reopen with specified encording
 		let encord_type = s:input_char('Reopen encord type', ['utf8', 'sjis'])
-		if !empty(encord_type)
+		if !empty(encord_type) && s:yesno()
 			call s:close_window()
 			execute 'e ++enc='.encord_type
 		endif
@@ -282,7 +300,7 @@ function! s:cmemo_selected_handler(key) abort
 	elseif a:key == "5"
 		" Convert to specified encording
 		let encord_type = s:input_char('Convert encord type', ['utf8', 'sjis'])
-		if !empty(encord_type)
+		if !empty(encord_type) && s:yesno()
 			call s:close_window()
 			execute 'set fenc='.encord_type
 		endif
@@ -290,7 +308,7 @@ function! s:cmemo_selected_handler(key) abort
 	elseif a:key == "6"
 		" Reopen with specified NL-code
 		let NL_code = s:input_char('Reopen NL code', ['unix', 'dos', 'mac'])
-		if !empty(NL_code)
+		if !empty(NL_code) && s:yesno()
 			call s:close_window()
 			execute 'edit ++fileformat='.NL_code
 		endif
@@ -298,14 +316,14 @@ function! s:cmemo_selected_handler(key) abort
 	elseif a:key == "7"
 		" Convert to specified NL-code
 		let NL_code = s:input_char('Convert NL code', ['unix', 'dos', 'mac'])
-		if !empty(NL_code)
+		if !empty(NL_code) && s:yesno()
 			call s:close_window()
 			execute 'set fileformat='.NL_code
 		endif
 
 	elseif a:key == "8"
 		" Remove NL-code
-		call s:close_window()
+		call s:close_window() && s:yesno()
 		execute '%s/\n//g'
 
 	elseif a:key == "q"
@@ -318,7 +336,9 @@ endfunction
 " Input key
 "*******************************************************
 function! s:input_key(timer) abort
-	let c = input("Please select a key : ")
+	echo "Please select a key : "
+	let c = nr2char(getchar())
+	echo "\r"
 	call s:cmemo_selected_handler(c)
 	if bufwinnr("-cmemo-") != -1
 		call timer_start(200, function("s:input_key"))
