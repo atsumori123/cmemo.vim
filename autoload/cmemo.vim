@@ -248,7 +248,13 @@ function! s:cmemo_selected_handler(key) abort
 	elseif a:key == "n"
 		call s:close_window()
 		execute 'lcd '.expand("%:h")
-		bot terminal
+		if has('nvim')
+			belowright new
+			terminal
+			startinsert
+		else
+			bot terminal
+		endif
 
 	elseif a:key == "e"
 		" Reset errorformat
